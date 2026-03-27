@@ -1,0 +1,35 @@
+title: 'LSASS Memory Dump-Elastic Defend'
+id: 085ff825-4d26-4fd6-89a8-90289eb4d319
+status: 'experimental'
+description: |
+  This rule looks for the APIs MiniDumpWriteDump, OpenProcess, and ReadProcessMemory accessing lsass.exe by searching through endpoints.events.api logs, which comes from the Elastic Defend Integration. 
+references:
+  - 'https://learn.microsoft.com/en-us/windows/win32/api/minidumpapiset/nf-minidumpapiset-minidumpwritedump'
+  - 'https://learn.microsoft.com/en-us/windows/win32/api/minidumpapiset/nf-minidumpapiset-minidumpwritedump'
+  - 'https://attack.mitre.org/techniques/T1003/001/'
+  - 'https://www.atomicredteam.io/docs/atomics/T1003.001'
+author: '@bleakbit'
+date: '2026/03/24'
+tags:
+  - detection.threat-hunting
+  - credential-access
+  - t1003.001
+logsource:
+  category: api
+  product: elastic-defend
+detection:
+    selection_target_img:
+        Target.process.name: 'lsass.exe'
+    selection_api:
+        process.Ext.api.name: 
+          - 'MiniDumpWriteDump'
+          - 'OpenProcess'
+          - 'ReadProcessMemory'
+    filter_executable:
+       - process.executable|endswith: '\MsMpEng.exe'
+    condition: all of selection* and not filter_executable
+falsepositives:
+     - An authorized memory dump of LSASS.exe will create an alert. 
+     - MsMpEng.exe (Microsoft Malware Protection Engine) was creating false positives so it was added as filter. If removed, this will create alerts.
+     - Vulnerability scanners accessing memory of LSASS. 
+level: 'high'  # info | low | medium | high | critical

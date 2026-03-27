@@ -1,0 +1,34 @@
+title: 'LSASS Memory Dump-Sysmon'
+id: 0dd8e5fd-c519-40ad-b6e2-641ac4321a8d
+status: 'experimental'
+description: |
+    Detecting LSASS memory dump. This rule functions with Sysmon EID 10. It looks for processes making requests to lsass.exe and that were granted access 0x1fffff, which means it was given full access. It also looks for access 0x1010, which is Process_VM_Read. Process_VM_Readh is necessary to call the MiniDumpWriteDump API function, which creates minidump information on a file.
+references:
+  - 'https://learn.microsoft.com/en-us/windows/win32/api/minidumpapiset/nf-minidumpapiset-minidumpwritedump'
+  - 'https://yukh1402.github.io/granted-access-converter/'
+  - 'https://attack.mitre.org/techniques/T1003/001/'
+  - 'https://www.atomicredteam.io/docs/atomics/T1003.001'
+author: '@bleakbit'
+date: '2026/03/24'
+tags:
+  - detection.threat-hunting
+  - credential-access
+  - t1003.001
+logsource:
+  category: process_access
+  product: windows
+detection:
+    selection_target_img:
+        - TargetImage|contains: 'lsass.exe'
+    selection_access:
+        GrantedAccess: 
+          - '0x1fffff'
+          - '0x1010'
+    filter_executable:
+       - process.executable|endswith: '\MsMpEng.exe'
+    condition: all of selection* and not filter_executable
+falsepositives:
+     - An authorized memory dump of LSASS.exe will create an alert. 
+     - MsMpEng.exe (Microsoft Malware Protection Engine) was creating false positives so it was added as filter. If removed, this will create alerts.
+     - Vulnerability scanners accessing memory of LSASS. 
+level: 'high'  # info | low | medium | high | critical
